@@ -39,17 +39,19 @@
               }
             ],
             "styles": [
-              "src/styles.scss"
+              "@angular/material/prebuilt-themes/azure-blue.css",
+              "src/styles.scss",
+              "bootstrap/dist/css/bootstrap.css"
             ],
-            "scripts": []
+            "scripts": [ "bootstrap/dist/js/bootstrap.js"]
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "5MB",
+                  "maximumError": "7MB"
                 },
                 {
                   "type": "anyComponentStyle",
@@ -98,6 +100,7 @@
               }
             ],
             "styles": [
+              "@angular/material/prebuilt-themes/azure-blue.css",
               "src/styles.scss"
             ],
             "scripts": []
@@ -105,5 +108,8 @@
         }
       }
     }
+  },
+  "cli": {
+    "analytics": "d5a63936-8b09-445a-bfcd-e8a2843b1df2"
   }
 }

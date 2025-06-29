@@ -1,0 +1,57 @@
+.startingGame {
+    padding: 2vh;
+    display: flex;
+    background-color: rgb(75, 190, 210, 0.9);
+    border-radius: 1vh;
+    flex-direction: column;
+}
+
+.role-button {
+    margin: 2vh;
+    width: 15vh;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-color: transparent;
+    height: 15vh;
+    border: none;
+
+    &.hunter {
+        background-image: url("/assets/HunterIcon.png");
+    }
+
+    &.gatherer {
+        background-image: url("/assets/GathererIcon.png");
+    }
+
+    &:hover {
+        background-color: blueviolet;
+    }
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.roles {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+}
+
+.info-button{
+    background-color: brown;
+    color: white;
+}
+
+.room-chooser{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.code-input{
+    background-color: transparent;
+}

@@ -1,0 +1,14 @@
+<div class="MenuPage gun-cursor">
+    <div class="Header">
+        <button [ngClass]="Sound ? 'On' : 'Off'"  class="SoundButton" (click)="soundChange()"></button>
+    </div>
+    <div class="MainMenu">
+        <div class="Logo"></div>
+        @if(CurrentScreen == "MainMenu"){<app-menu-options (ChosenOption)="receiveChosenOption($event)"></app-menu-options> }
+        @if(CurrentScreen == "Instructions"){<app-instructions (ChosenOption)="receiveChosenOption($event)"></app-instructions> }
+        @if(CurrentScreen == "About"){<app-about (ChosenOption)="receiveChosenOption($event)"></app-about> }
+    </div>
+    <div class="Footer">
+
+    </div>
+</div>  

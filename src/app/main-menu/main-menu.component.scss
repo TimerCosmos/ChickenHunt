@@ -1,0 +1,57 @@
+.MenuPage {
+  background-image: url("/assets/ChickenHuntBackGround.png");
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.Logo {
+  background-image: url("/assets/Logo.png");
+  width: 20vh;
+  height: 20vh;
+  border-radius: 5vh;
+  margin-bottom: 10vh;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.Header {
+  display: flex;
+  width: 100vw;
+  justify-content: end;
+}
+
+.MainMenu {
+  border-radius: 2vh;
+  background: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2vh;
+  flex-direction: column;
+}
+
+
+.SoundButton {
+  background: transparent;
+  border: none !important;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  width: 10vh;
+  height: 10vh;
+  &.On {
+    background-image: url("/assets/SoundOn.png");
+  }
+  &.Off{
+    background-image: url("/assets/SoundOff.png");
+  }
+}

@@ -1,4 +1,106 @@
 /* You can add global styles to this file, and also import other style files */
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+*,
+html,
+body {
+  &.gun-cursor{
+    cursor: url('/assets/gun-cursor.cur'), auto !important;
+  }
+
+  &.hunter-cursor{
+    cursor: url("/assets/HunterIcon.cur"),auto !important;
+    cursor: e-resize;
+  }
+}
+
+
+#explosion {
+  position: fixed;
+  width: 32px;
+  height: 32px;
+  background: url('/assets/CursorClicked.png') no-repeat center center;
+  background-size: contain;
+  display: none;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.MenuButton {
+  width: 15vw;
+  color: black !important;
+  font-weight: 100 !important;
+  margin: 1vh;
+
+  &:hover {
+    background-color: #B2EBF2 !important;
+    box-shadow: inset -6px -6px 10px 0px #547792;
+    cursor: url('/assets/gun-cursor.cur'), auto !important;
+  }
+
+  background-color: #B2EBF2 !important;
+  box-shadow: inset -6px -6px 10px 0px #547792;
+
+  @media (max-width: 1150px) {
+    font-size: 15px !important;
+  }
+}
+
+.pixel-font {
+  font-family: 'Press Start 2P', monospace !important;
+  letter-spacing: 1px;
+}
+
+
+@for $i from 1 through 100 {
+  .font-#{$i} {
+    font-size: #{$i}px !important;
+
+    @media (max-width: 1000px) {
+      font-size: #{$i/2}px !important;
+    }
+
+  }
+
+}
+
+.txt-white {
+  color: white !important;
+}
+
+.pop-up {
+  position: fixed;
+  /* 👈 KEY CHANGE */
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+}
+
+.close-button {
+  background-image: url("/assets/Close.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: transparent;
+  border: none;
+  width: 5vh;
+  height: 5vh;
+
+  &:hover{
+    background-color: blueviolet;
+  }
+}

@@ -1,5 +1,5 @@
 /* You can add global styles to this file, and also import other style files */
-
+@use 'sass:math';
 html,
 body {
   height: 100%;
@@ -13,11 +13,11 @@ body {
 *,
 html,
 body {
-  &.gun-cursor{
+  &.gun-cursor, &.gun-cursor button:hover{
     cursor: url('/assets/gun-cursor.cur'), auto !important;
   }
 
-  &.hunter-cursor{
+  &.hunter-cursor, &.hunter-cursor button:hover{
     cursor: url("/assets/HunterIcon.cur"),auto !important;
     cursor: e-resize;
   }
@@ -61,22 +61,25 @@ body {
 }
 
 
+
 @for $i from 1 through 100 {
   .font-#{$i} {
     font-size: #{$i}px !important;
 
     @media (max-width: 1000px) {
-      font-size: #{$i/2}px !important;
+      font-size: #{math.div($i, 2)}px !important;
     }
-
   }
-
 }
+
 
 .txt-white {
   color: white !important;
 }
 
+.txt-black{
+  color: black !important;
+}
 .pop-up {
   position: fixed;
   /* 👈 KEY CHANGE */

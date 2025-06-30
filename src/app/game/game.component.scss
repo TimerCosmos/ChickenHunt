@@ -12,3 +12,23 @@
   background-position: center;
   background-repeat: no-repeat;
 }
+
+
+.menu-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: absolute;
+  z-index: 2;
+  width: 100%;
+}
+
+.game-info{
+  display: flex;
+  flex-direction: column;
+}
+
+.pause-button{
+  background-color: brown;
+  color: white;
+}

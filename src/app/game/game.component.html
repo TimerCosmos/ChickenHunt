@@ -1,1 +1,13 @@
-<div #canvasContainer class="canvas-container hunter-cursor"></div>
+<div class="hunter-cursor">
+    <div class="menu-header">
+        <div class="left-top p-2">
+            <button class="pause-button pixel-font">II</button>
+        </div>
+        <div class="right-top font-12 game-info p-2">
+            <span class="game-text pixel-font">Chickens Hunted : {{chickensHunted}}</span>
+            <span class="game-text pixel-font">Chickens Missed : {{chickensMissed}}</span>
+        </div>
+    </div>
+
+    <div #canvasContainer class="canvas-container"></div>
+</div>

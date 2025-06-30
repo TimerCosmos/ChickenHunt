@@ -1,4 +1,5 @@
 import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { Router } from '@angular/router';
 import { interval, Subscription } from 'rxjs';
 import * as THREE from 'three';
 @Component({
@@ -7,36 +8,92 @@ import * as THREE from 'three';
   templateUrl: './game.component.html',
   styleUrl: './game.component.scss'
 })
-export class GameComponent implements OnInit, AfterViewInit {
+export class GameComponent implements OnInit {
   @ViewChild('canvasContainer', { static: true }) containerRef!: ElementRef;
   degToRad = (degrees: number) => degrees * (Math.PI / 180);
   chickens: { wingOne: THREE.Group, wingTwo: THREE.Group, chicken: THREE.Group, wingFlap: string, SpawnedOn: number, chickenPath: string, missed: boolean, hunted: boolean }[] = []
+  meat: { meat: THREE.Group, caught: boolean, missed: boolean }[] = []
+  feathers: THREE.Mesh[] = [];
+  cart: THREE.Group = new THREE.Group()
   scene: THREE.Scene = new THREE.Scene();
   camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
   renderer: THREE.WebGLRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   textureLoader = new THREE.TextureLoader()
   raycaster = new THREE.Raycaster();
   mouse = new THREE.Vector2();
+  Score: number = 0;
   chickenSpawner!: Subscription;
   chickensHunted: number = 0;
   chickensMissed: number = 0;
+  meatMissed: number = 0;
+  meatGathered: number = 0;
   chickenFlightSpeed: number = 1;
   chickenSpawnInterval: number = 2000;
+  level: number = 1;
+  chickensCaughtInCurrentLevel: number = 0;
+  clock = new THREE.Clock();
+  pause: boolean = false;
+  gameOver: boolean = false;
+  pressedKeys: Set<string> = new Set<string>()
+  constructor(private router : Router){}
+  boundMouseClick!: (event: MouseEvent) => void;
+  boundKeydown!: (event: KeyboardEvent) => void;
+  boundKeyUp!: (event: KeyboardEvent) => void;
   ngOnInit(): void {
     this.startAnimation();
     this.sceneSettings();
-    window.addEventListener('click', this.onMouseClick.bind(this), false);
+    this.boundMouseClick = this.onMouseClick.bind(this);
+    window.addEventListener('click', this.boundMouseClick, false);
+    this.boundKeydown = this.onKeyDown.bind(this);
+    window.addEventListener('keydown', this.boundKeydown);
+    this.boundKeyUp = this.onKeyUp.bind(this)
+    window.addEventListener('keyup', this.boundKeyUp)
     this.updateChickenSpawner(this.chickenSpawnInterval);
+    this.addKeyBoardEventListeners();
+    this.createCart();
   }
-  ngAfterViewInit(): void {
-
+  onKeyUp(event: KeyboardEvent) {
+    if (event.code == "ArrowLeft" || event.code == "KeyA") {
+      this.pressedKeys.delete("Left")
+    } else if (event.code == "ArrowRight" || event.code == "KeyD") {
+      this.pressedKeys.delete("Right")
+    }
+  }
+  onKeyDown(event: KeyboardEvent) {
+    if (event.code == "ArrowLeft" || event.code == "KeyA") {
+      this.pressedKeys.add("Left")
+    } else if (event.code == "ArrowRight" || event.code == "KeyD") {
+      this.pressedKeys.add("Right")
+    }
+  }
+  createFeatherExplosion(position: THREE.Vector3, count: number = 5) {
+    for (let i = 0; i < count; i++) {
+      const geometry = new THREE.PlaneGeometry(0.5, 0.5);
+      const material = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.9, });
+      const feather = new THREE.Mesh(geometry, material);
+      feather.position.copy(position);
+      const velocity = new THREE.Vector3((Math.random() - 0.5) * 2, Math.random() * 2, (Math.random() - 0.5) * 2);
+      feather.userData = {
+        velocity,
+        life: 1.5,
+      };
+      this.scene.add(feather);
+      this.feathers.push(feather);
+    }
+  }
+  addKeyBoardEventListeners() {
+    window.addEventListener('keydown', (event) => {
+      if (event.code == 'Escape')
+        this.pause = !this.pause
+    })
   }
   onMouseClick(event: MouseEvent) {
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     this.raycaster.setFromCamera(this.mouse, this.camera);
-    const intersects = this.raycaster.intersectObjects(this.chickens.map(c => c.chicken),true);
+    const unHuntedChickenGroups = this.chickens.filter(c => !c.hunted).map(c => c.chicken);
+    const intersects = this.raycaster.intersectObjects(unHuntedChickenGroups, true);
     if (intersects.length > 0) {
       const clickedObj = intersects[0].object;
       const clickedChickenIndex = this.chickens.findIndex(chicken => {
@@ -48,15 +105,18 @@ export class GameComponent implements OnInit, AfterViewInit {
       });
       if (clickedChickenIndex !== -1) {
         const clickedChicken = this.chickens[clickedChickenIndex];
+        const pos = new THREE.Vector3();
+        clickedChicken.chicken.getWorldPosition(pos);
+        this.createFeatherExplosion(pos);
+        this.createMeat(pos)
         this.scene.remove(clickedChicken.chicken);
         clickedChicken.hunted = true;
-        this.chickensHunted += 1; 
+        this.chickensHunted += 1;
+        this.Score += 1 * this.level;
+        this.chickensCaughtInCurrentLevel += 1;
       }
     }
   }
-
-
-
   sceneSettings() {
     this.containerRef.nativeElement.appendChild(this.renderer.domElement);
     this.camera.position.set(0, 0, 50);
@@ -69,6 +129,23 @@ export class GameComponent implements OnInit, AfterViewInit {
   startAnimation() {
     const animate = () => {
       requestAnimationFrame(animate);
+      if (this.pressedKeys.has("Left")) {
+        this.cart.position.x -= 0.5
+      }
+      if (this.pressedKeys.has("Right")) {
+        this.cart.position.x += 0.5
+      }
+      this.cart.position.x = THREE.MathUtils.clamp(this.cart.position.x, -43, 43);
+      if (this.chickensMissed == 10 || this.meatMissed == 10) {
+        window.removeEventListener('click', this.boundMouseClick, false);
+        this.gameOver = true;
+      }
+      if (this.chickensCaughtInCurrentLevel == 15) {
+        this.level += 1;
+        this.chickensCaughtInCurrentLevel = 0;
+        this.chickenFlightSpeed *= 1.2
+        this.updateChickenSpawner(this.chickenSpawnInterval * 0.9)
+      }
       this.chickens.forEach((chicken: { wingOne: THREE.Group, wingTwo: THREE.Group, chicken: THREE.Group, wingFlap: string, SpawnedOn: number, chickenPath: string, missed: boolean, hunted: boolean }) => {
         if (chicken.wingOne.rotation.x >= -3 && chicken.wingFlap == "Up") {
           chicken.wingOne.rotation.x -= 0.1
@@ -98,6 +175,38 @@ export class GameComponent implements OnInit, AfterViewInit {
         }
 
       })
+      const delta = this.clock.getDelta();
+      for (let i = this.feathers.length - 1; i >= 0; i--) {
+        const feather = this.feathers[i];
+        feather.position.addScaledVector(feather.userData['velocity'], delta);
+        feather.userData['velocity'].y -= delta * 2; // gravity
+        feather.userData['life'] -= delta;
+        if (feather.userData['life'] <= 0) {
+          this.scene.remove(feather);
+          this.feathers.splice(i, 1);
+        }
+      }
+      this.meat.forEach((meat) => {
+        if (meat.caught || meat.missed) return;
+        const meatPos = meat.meat.position
+        const cartPos = this.cart.position
+        if (meatPos.distanceTo(cartPos) <2) {
+          this.scene.remove(meat.meat);
+          meat.caught = true;
+          this.meatGathered += 1;
+          this.Score += 1 * this.level;
+          return;
+        }
+        if (meat.meat.position.y >= -15) {
+          meat.meat.position.y -= 0.1;
+          meat.meat.rotation.z += 0.05;
+        } else {
+          this.scene.remove(meat.meat);
+          meat.missed = true;
+          this.meatMissed += 1;
+        }
+      });
+
       this.renderer.render(this.scene, this.camera);
     }
     animate();
@@ -115,7 +224,6 @@ export class GameComponent implements OnInit, AfterViewInit {
     this.chickenSpawnInterval = newInterval;
     this.spawnChickens();
   }
-
   createChicken(x: number, y: number, z: number) {
     const chicken = new THREE.Group();
     const head = this.createBox(1, 1, 0.1, new THREE.Color('#FFFFFF'))
@@ -173,12 +281,48 @@ export class GameComponent implements OnInit, AfterViewInit {
     this.scene.add(chicken)
     chicken.position.set(x, y, z);
   }
-
+  createMeat(pos: THREE.Vector3) {
+    const meat = new THREE.Group()
+    const meatSmallTopPart = this.createBox(0.5, 0.3, 0.1, new THREE.Color('#954C2E'))
+    const meatMiddlePart = this.createBox(0.75, 0.75, 0.1, new THREE.Color('#954C2E'))
+    const meatDownPart = meatSmallTopPart.clone()
+    const meatBone = this.createBox(0.2, 0.5, 0.1, new THREE.Color('#FFFFFF'))
+    const boneBox = this.createBox(0.25, 0.25, 0.1, new THREE.Color('#FFFFFF'))
+    const boneTwoBox = boneBox.clone();
+    meat.add(meatSmallTopPart)
+    meat.add(meatMiddlePart)
+    meat.add(meatDownPart)
+    const bone = new THREE.Group()
+    bone.add(meatBone)
+    bone.add(boneBox)
+    bone.add(boneTwoBox)
+    boneBox.position.set(-0.2, 0.35, 0)
+    boneTwoBox.position.set(0.2, 0.35, 0)
+    meat.add(bone)
+    bone.position.set(0, 0.9, 0)
+    meatSmallTopPart.position.set(0, 0.5, 0)
+    meatDownPart.position.set(0, -0.5, 0)
+    this.scene.add(meat)
+    meat.position.copy(pos);
+    this.meat.push({ meat: meat, missed: false, caught: false })
+  }
   createBox(width: number, height: number, depth: number, color: THREE.Color) {
     const box = new THREE.BoxGeometry(width, height, depth);
     const boxMaterial = new THREE.MeshBasicMaterial({ color: color });
     const boxMesh = new THREE.Mesh(box, boxMaterial);
     return boxMesh;
+  }
+  createCart() {
+    const texture = this.textureLoader.load('assets/GathererIcon.png');
+    const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide, });
+    const geometry = new THREE.PlaneGeometry(10, 10);
+    const mesh = new THREE.Mesh(geometry, material);
+    this.cart.add(mesh)
+    this.scene.add(this.cart)
+    this.cart.position.set(0, -11, 0)
+  }
+  exitGame(){
+    this.router.navigate(['/MainMenu'])
   }
 
 }

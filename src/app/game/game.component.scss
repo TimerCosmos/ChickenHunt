@@ -32,3 +32,20 @@
   background-color: brown;
   color: white;
 }
+
+.pause-menu{
+  background-color: greenyellow;
+  padding: 2vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.game-over-menu{
+  background-color: greenyellow;
+  padding: 2vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}

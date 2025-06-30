@@ -6,8 +6,33 @@
         <div class="right-top font-12 game-info p-2">
             <span class="game-text pixel-font">Chickens Hunted : {{chickensHunted}}</span>
             <span class="game-text pixel-font">Chickens Missed : {{chickensMissed}}</span>
+            <span class="game-text pixel-font">Meat Gathered : {{meatGathered}}</span>
+            <span class="game-text pixel-font">Meat Missed : {{meatMissed}}</span>
+            <span class="game-text pixel-font">Score : {{Score}}</span>
         </div>
     </div>
 
     <div #canvasContainer class="canvas-container"></div>
+    @if(pause){
+    <div class="pop-up">
+        <div class="pause-menu">
+            <span class="pixel-font font-10">Note : The game will be running even while in pause, since it is techinally
+                multiplayer, Go help your friend</span><br>
+            <div class="buttons d-flex pixel-font justify-content-around">
+                <button class="pause-button" (click)="pause = false">Resume</button>
+                <button class="pause-button" (click)="exitGame()">Exit</button>
+            </div>
+        </div>
+    </div>
+    }
+
+    @if(gameOver){
+    <div class="pop-up">
+        <div class="game-over-menu pixel-font">
+            <span>Your Score : {{Score}} </span>
+            <span>Game Over !</span>
+            <button class="pause-button" (click)="exitGame()">Exit</button>
+        </div>
+    </div>
+    }
 </div>

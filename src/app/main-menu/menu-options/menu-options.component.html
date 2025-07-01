@@ -12,31 +12,37 @@
     <div class="startingGame pixel-font font-12">
         <div class="header">
             <span class="font-20">Chicken Hunt</span>
-            <button class="close-button"></button>
+            <button class="close-button" (click)="startingGame = false"></button>
         </div>
         @if(!hasRoom){
         <div class="role-chooser">
             <span>Choose your role!</span>
             <div class="roles">
-                <button class="role-button hunter" matTooltip="Hunter" matTooltipPosition="above"></button>
-                <button class="role-button gatherer" matTooltip="Gatherer" matTooltipPosition="above"></button>
+                <button [disabled]="waiting" [ngClass]="role == 'Hunter' ? 'role-selected' : ''" class="role-button hunter" matTooltip="Hunter" matTooltipPosition="above" (click)="role = 'Hunter'"></button>
+                <button [disabled]="waiting" [ngClass]="role == 'Gatherer' ? 'role-selected' : ''" class="role-button gatherer" matTooltip="Gatherer" matTooltipPosition="above" (click)="role = 'Gatherer'"></button>
             </div>
         </div>
         }
         <div class="room-chooser">
             @if(!hasRoom){
-            <span>Your room code : {{code}} </span><br>
+            <span>Your room code : {{roomCode}} </span><br>
             <span>Already have a room? <button class="info-button" (click)="hasRoom = true">Yes</button><br></span>
             }@else {
                 <span>
                     <label for="RoomCode">Enter your friends room code : </label>
-                    <input class="code-input" title="Code" name="RoomCode"/>
+                    <input [(ngModel)]="inputValue" class="code-input" title="Code" name="RoomCode"/>
                 </span><br>
                 <span>Create new Room? <button class="info-button" (click)="hasRoom = false">Yes</button></span>
             }
         </div><br>
         <div class="d-flex justify-content-center align-items-center">
-            <button class="info-button" (click)="goToGame()">Start</button>
+            @if(!hasRoom){
+                @if(waiting){
+                    <span class="pixel-font">Waiting for other player ... </span>
+                }@else {<button class="info-button" (click)="goToGame()">Start</button>}
+            }@else{
+                <button class="info-button" (click)="goToGame()">Start</button>
+            }
         </div>
     </div>
 </div>

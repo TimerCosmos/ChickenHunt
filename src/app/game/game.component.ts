@@ -2,6 +2,8 @@ import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angula
 import { Router } from '@angular/router';
 import { interval, Subscription } from 'rxjs';
 import * as THREE from 'three';
+import { Chicken } from '../models/chicken';
+import { SignalRService } from '../services/signal-r.service';
 @Component({
   selector: 'app-game',
   standalone: false,
@@ -11,8 +13,8 @@ import * as THREE from 'three';
 export class GameComponent implements OnInit {
   @ViewChild('canvasContainer', { static: true }) containerRef!: ElementRef;
   degToRad = (degrees: number) => degrees * (Math.PI / 180);
-  chickens: { wingOne: THREE.Group, wingTwo: THREE.Group, chicken: THREE.Group, wingFlap: string, SpawnedOn: number, chickenPath: string, missed: boolean, hunted: boolean }[] = []
-  meat: { meat: THREE.Group, caught: boolean, missed: boolean }[] = []
+  chickens: { wingOne: THREE.Group, wingTwo: THREE.Group, chicken: THREE.Group, wingFlap: string, SpawnedOn: number, chickenPath: string, missed: boolean, hunted: boolean, id: string }[] = []
+  meat: { meat: THREE.Group, caught: boolean, missed: boolean, id: string }[] = []
   feathers: THREE.Mesh[] = [];
   cart: THREE.Group = new THREE.Group()
   scene: THREE.Scene = new THREE.Scene();
@@ -28,42 +30,124 @@ export class GameComponent implements OnInit {
   meatMissed: number = 0;
   meatGathered: number = 0;
   chickenFlightSpeed: number = 1;
-  chickenSpawnInterval: number = 2000;
-  level: number = 1;
-  chickensCaughtInCurrentLevel: number = 0;
   clock = new THREE.Clock();
   pause: boolean = false;
   gameOver: boolean = false;
+  roomCode!: string;
   pressedKeys: Set<string> = new Set<string>()
-  constructor(private router : Router){}
+  role: string = "TBD";
+  otherPlayerDisconnected: boolean = false;
+  playerExited : boolean = false;
+  constructor(private router: Router, private signalRService: SignalRService) {
+    const roomCode = sessionStorage.getItem('RoomCode')
+    if (roomCode != null) {
+      this.roomCode = roomCode
+    }
+    const role = sessionStorage.getItem('Role')
+    if (role != null) {
+      this.role = role;
+    }
+  }
   boundMouseClick!: (event: MouseEvent) => void;
   boundKeydown!: (event: KeyboardEvent) => void;
   boundKeyUp!: (event: KeyboardEvent) => void;
-  ngOnInit(): void {
+  backEndRequests() {
+
+    this.signalRService.hubConnection.on("SpawnChicken", (chicken:any) => {
+      this.createChicken(chicken.xPos, chicken.yPos, chicken.zPos, chicken.id)
+    })
+
+    this.signalRService.onUpdateKills((kills, id, score, levelIncrease) => {
+      this.chickensHunted = kills;
+      this.Score = score;
+      const chicken = this.chickens.filter(c => c.id == id)[0].chicken
+      const pos = new THREE.Vector3();
+      chicken.getWorldPosition(pos);
+      this.createFeatherExplosion(pos);
+      this.createMeat(pos, id)
+      this.scene.remove(chicken)
+      if (levelIncrease) {
+        this.chickenFlightSpeed *= 1.2;
+      }
+    });
+
+    this.signalRService.onUpdateMissedChickens((missed, id) => {
+      const chicken = this.chickens.filter(c => c.id == id)[0]
+      chicken.missed = true
+      this.scene.remove(chicken.chicken)
+      this.chickensMissed = missed;
+    });
+
+    this.signalRService.onUpdateMeatGathered((meat, id, score) => {
+      this.Score = score;
+      const meats = this.meat.filter(m => m.id == id)[0]
+      this.scene.remove(meats.meat)
+      meats.caught = true;
+      this.meatGathered = meat;
+    });
+
+    this.signalRService.onUpdateMeatMissed((missedMeat, id) => {
+      const meats = this.meat.filter(m => m.id == id)[0]
+      this.scene.remove(meats.meat)
+      meats.missed = true;
+      this.meatMissed = missedMeat;
+    });
+
+    this.signalRService.onUpdateCartPosition((direction, action) => {
+      if (action == true) {
+        this.pressedKeys.add(direction)
+      } else {
+        this.pressedKeys.delete(direction)
+      }
+    })
+
+    this.signalRService.onGameOver(() => {
+      this.gameOver = true;
+    })
+
+    this.signalRService.onPlayerDisconnected((role: string) => {
+      this.otherPlayerDisconnected = true;
+    });
+
+    this.signalRService.onPlayerExit((role : string) => {
+      this.playerExited = true;
+    })
+  }
+  async ngOnInit() {
+    await this.signalRService.reconnectToRoom(this.roomCode, this.role)
+    if(this.role == "Hunter"){
+      await this.signalRService.startGame(this.roomCode)
+    }
     this.startAnimation();
     this.sceneSettings();
-    this.boundMouseClick = this.onMouseClick.bind(this);
-    window.addEventListener('click', this.boundMouseClick, false);
-    this.boundKeydown = this.onKeyDown.bind(this);
-    window.addEventListener('keydown', this.boundKeydown);
-    this.boundKeyUp = this.onKeyUp.bind(this)
-    window.addEventListener('keyup', this.boundKeyUp)
-    this.updateChickenSpawner(this.chickenSpawnInterval);
+    this.roleBasedEventListenersActivation();
     this.addKeyBoardEventListeners();
     this.createCart();
+    this.backEndRequests();
+  }
+  roleBasedEventListenersActivation() {
+    if (this.role == "Hunter") {
+      this.boundMouseClick = this.onMouseClick.bind(this);
+      window.addEventListener('click', this.boundMouseClick, false);
+    } else {
+      this.boundKeydown = this.onKeyDown.bind(this);
+      window.addEventListener('keydown', this.boundKeydown);
+      this.boundKeyUp = this.onKeyUp.bind(this)
+      window.addEventListener('keyup', this.boundKeyUp)
+    }
   }
   onKeyUp(event: KeyboardEvent) {
     if (event.code == "ArrowLeft" || event.code == "KeyA") {
-      this.pressedKeys.delete("Left")
+      this.signalRService.moveCart(this.roomCode, "Left", false)
     } else if (event.code == "ArrowRight" || event.code == "KeyD") {
-      this.pressedKeys.delete("Right")
+      this.signalRService.moveCart(this.roomCode, "Right", false)
     }
   }
   onKeyDown(event: KeyboardEvent) {
     if (event.code == "ArrowLeft" || event.code == "KeyA") {
-      this.pressedKeys.add("Left")
+      this.signalRService.moveCart(this.roomCode, "Left", true)
     } else if (event.code == "ArrowRight" || event.code == "KeyD") {
-      this.pressedKeys.add("Right")
+      this.signalRService.moveCart(this.roomCode, "Right", true)
     }
   }
   createFeatherExplosion(position: THREE.Vector3, count: number = 5) {
@@ -105,15 +189,8 @@ export class GameComponent implements OnInit {
       });
       if (clickedChickenIndex !== -1) {
         const clickedChicken = this.chickens[clickedChickenIndex];
-        const pos = new THREE.Vector3();
-        clickedChicken.chicken.getWorldPosition(pos);
-        this.createFeatherExplosion(pos);
-        this.createMeat(pos)
-        this.scene.remove(clickedChicken.chicken);
         clickedChicken.hunted = true;
-        this.chickensHunted += 1;
-        this.Score += 1 * this.level;
-        this.chickensCaughtInCurrentLevel += 1;
+        this.signalRService.chickenKilled(this.roomCode, clickedChicken.id);
       }
     }
   }
@@ -136,17 +213,8 @@ export class GameComponent implements OnInit {
         this.cart.position.x += 0.5
       }
       this.cart.position.x = THREE.MathUtils.clamp(this.cart.position.x, -43, 43);
-      if (this.chickensMissed == 10 || this.meatMissed == 10) {
-        window.removeEventListener('click', this.boundMouseClick, false);
-        this.gameOver = true;
-      }
-      if (this.chickensCaughtInCurrentLevel == 15) {
-        this.level += 1;
-        this.chickensCaughtInCurrentLevel = 0;
-        this.chickenFlightSpeed *= 1.2
-        this.updateChickenSpawner(this.chickenSpawnInterval * 0.9)
-      }
-      this.chickens.forEach((chicken: { wingOne: THREE.Group, wingTwo: THREE.Group, chicken: THREE.Group, wingFlap: string, SpawnedOn: number, chickenPath: string, missed: boolean, hunted: boolean }) => {
+      this.chickens.forEach((chicken: { wingOne: THREE.Group, wingTwo: THREE.Group, chicken: THREE.Group, wingFlap: string, SpawnedOn: number, chickenPath: string, missed: boolean, hunted: boolean, id: string }) => {
+        if (chicken.missed || chicken.hunted) return;
         if (chicken.wingOne.rotation.x >= -3 && chicken.wingFlap == "Up") {
           chicken.wingOne.rotation.x -= 0.1
           chicken.wingTwo.rotation.x += 0.1
@@ -168,10 +236,8 @@ export class GameComponent implements OnInit {
             chicken.chickenPath = "Up"
           }
         }
-        if (Date.now() - chicken.SpawnedOn > 10000 && !chicken.missed && !chicken.hunted) {
-          this.scene.remove(chicken.chicken)
-          this.chickensMissed += 1;
-          chicken.missed = true;
+        if (Date.now() - chicken.SpawnedOn > 10000) {
+          this.signalRService.chickenMissed(this.roomCode, chicken.id)
         }
 
       })
@@ -190,20 +256,15 @@ export class GameComponent implements OnInit {
         if (meat.caught || meat.missed) return;
         const meatPos = meat.meat.position
         const cartPos = this.cart.position
-        if (meatPos.distanceTo(cartPos) <2) {
-          this.scene.remove(meat.meat);
-          meat.caught = true;
-          this.meatGathered += 1;
-          this.Score += 1 * this.level;
+        if (meatPos.distanceTo(cartPos) < 2) {
+          this.signalRService.meatGathered(this.roomCode, meat.id)
           return;
         }
         if (meat.meat.position.y >= -15) {
           meat.meat.position.y -= 0.1;
           meat.meat.rotation.z += 0.05;
         } else {
-          this.scene.remove(meat.meat);
-          meat.missed = true;
-          this.meatMissed += 1;
+          this.signalRService.meatMissed(this.roomCode, meat.id)
         }
       });
 
@@ -211,20 +272,8 @@ export class GameComponent implements OnInit {
     }
     animate();
   }
-  spawnChickens() {
-    this.chickenSpawner = interval(this.chickenSpawnInterval).subscribe(() => {
-      const xPos = Math.floor(Math.random() * (43 - (-43) + 1)) + (-43)
-      this.createChicken(xPos, -10, 0);
-    })
-  }
-  updateChickenSpawner(newInterval: number) {
-    if (this.chickenSpawner) {
-      this.chickenSpawner.unsubscribe();
-    }
-    this.chickenSpawnInterval = newInterval;
-    this.spawnChickens();
-  }
-  createChicken(x: number, y: number, z: number) {
+  //Creates chicken at certain pos and id
+  createChicken(x: number, y: number, z: number, id: string) {
     const chicken = new THREE.Group();
     const head = this.createBox(1, 1, 0.1, new THREE.Color('#FFFFFF'))
     const body = this.createBox(4, 1.5, 0.1, new THREE.Color('#FFFFFF'))
@@ -277,11 +326,12 @@ export class GameComponent implements OnInit {
     wings.add(wingTwo)
     wingTwo.position.set(0, 0.3, -0.1)
     chicken.add(wings)
-    this.chickens.push({ wingOne: wingOne, wingTwo: wingTwo, chicken: chicken, wingFlap: "Up", SpawnedOn: Date.now(), chickenPath: "Up", missed: false, hunted: false })
+    this.chickens.push({ wingOne: wingOne, wingTwo: wingTwo, chicken: chicken, wingFlap: "Up", SpawnedOn: Date.now(), chickenPath: "Up", missed: false, hunted: false, id: id })
     this.scene.add(chicken)
     chicken.position.set(x, y, z);
   }
-  createMeat(pos: THREE.Vector3) {
+  //creates meat id at certain pos
+  createMeat(pos: THREE.Vector3, id: string) {
     const meat = new THREE.Group()
     const meatSmallTopPart = this.createBox(0.5, 0.3, 0.1, new THREE.Color('#954C2E'))
     const meatMiddlePart = this.createBox(0.75, 0.75, 0.1, new THREE.Color('#954C2E'))
@@ -304,7 +354,7 @@ export class GameComponent implements OnInit {
     meatDownPart.position.set(0, -0.5, 0)
     this.scene.add(meat)
     meat.position.copy(pos);
-    this.meat.push({ meat: meat, missed: false, caught: false })
+    this.meat.push({ meat: meat, missed: false, caught: false, id: id })
   }
   createBox(width: number, height: number, depth: number, color: THREE.Color) {
     const box = new THREE.BoxGeometry(width, height, depth);
@@ -321,7 +371,8 @@ export class GameComponent implements OnInit {
     this.scene.add(this.cart)
     this.cart.position.set(0, -11, 0)
   }
-  exitGame(){
+  exitGame() {
+    this.signalRService.playerExited(this.roomCode);
     this.router.navigate(['/MainMenu'])
   }
 

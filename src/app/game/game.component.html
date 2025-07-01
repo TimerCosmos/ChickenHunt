@@ -1,9 +1,21 @@
 <div class="hunter-cursor">
     <div class="menu-header">
         <div class="left-top p-2">
-            <button class="pause-button pixel-font">II</button>
+            <button class="pause-button pixel-font" (click)="pause = true">II</button>
         </div>
-        <div class="right-top font-12 game-info p-2">
+        @if(playerExited){
+        <div class="top-middle pixel-font">
+            Other player cruelly Exited !
+        </div>
+        }
+        @if(otherPlayerDisconnected){
+        <div class="top-middle pixel-font">
+            Other player lost connection 
+        </div>
+        }
+        <div class="right-top font-12 game-info p-2 flex-wrap">
+            <span class="game-text pixel-font"> Room Code : {{roomCode}} </span>
+            <span class="game-text pixel-font">Role : {{role}} </span>
             <span class="game-text pixel-font">Chickens Hunted : {{chickensHunted}}</span>
             <span class="game-text pixel-font">Chickens Missed : {{chickensMissed}}</span>
             <span class="game-text pixel-font">Meat Gathered : {{meatGathered}}</span>

@@ -35,22 +35,23 @@ export class GameComponent implements OnInit {
   gameOver: boolean = false;
   roomCode!: string;
   pressedKeys: Set<string> = new Set<string>()
-  role: string = "TBD";
+  role!: string;
   otherPlayerDisconnected: boolean = false;
   playerExited : boolean = false;
   constructor(private router: Router, private signalRService: SignalRService) {
-    const roomCode = sessionStorage.getItem('RoomCode')
-    if (roomCode != null) {
-      this.roomCode = roomCode
-    }
     const role = sessionStorage.getItem('Role')
     if (role != null) {
       this.role = role;
+    }
+    const roomCode = sessionStorage.getItem('RoomCode')
+    if (roomCode != null) {
+      this.roomCode = roomCode
     }
   }
   boundMouseClick!: (event: MouseEvent) => void;
   boundKeydown!: (event: KeyboardEvent) => void;
   boundKeyUp!: (event: KeyboardEvent) => void;
+  //Initialized various receive methods from backend
   backEndRequests() {
 
     this.signalRService.hubConnection.on("SpawnChicken", (chicken:any) => {
@@ -125,6 +126,7 @@ export class GameComponent implements OnInit {
     this.createCart();
     this.backEndRequests();
   }
+  //Activates controls based on the role
   roleBasedEventListenersActivation() {
     if (this.role == "Hunter") {
       this.boundMouseClick = this.onMouseClick.bind(this);
@@ -136,6 +138,7 @@ export class GameComponent implements OnInit {
       window.addEventListener('keyup', this.boundKeyUp)
     }
   }
+  //KeyBoard events, up and down
   onKeyUp(event: KeyboardEvent) {
     if (event.code == "ArrowLeft" || event.code == "KeyA") {
       this.signalRService.moveCart(this.roomCode, "Left", false)
@@ -150,6 +153,7 @@ export class GameComponent implements OnInit {
       this.signalRService.moveCart(this.roomCode, "Right", true)
     }
   }
+  //Creates feather explosion beside a hunted chicken
   createFeatherExplosion(position: THREE.Vector3, count: number = 5) {
     for (let i = 0; i < count; i++) {
       const geometry = new THREE.PlaneGeometry(0.5, 0.5);
@@ -165,12 +169,14 @@ export class GameComponent implements OnInit {
       this.feathers.push(feather);
     }
   }
+  //Activates esc for pause
   addKeyBoardEventListeners() {
     window.addEventListener('keydown', (event) => {
       if (event.code == 'Escape')
         this.pause = !this.pause
     })
   }
+  //Control for hunter
   onMouseClick(event: MouseEvent) {
     const rect = this.renderer.domElement.getBoundingClientRect();
     this.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -194,6 +200,7 @@ export class GameComponent implements OnInit {
       }
     }
   }
+  //Basic scene settings
   sceneSettings() {
     this.containerRef.nativeElement.appendChild(this.renderer.domElement);
     this.camera.position.set(0, 0, 50);
@@ -203,6 +210,7 @@ export class GameComponent implements OnInit {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.shadowMap.enabled = true;
   }
+  //Starts animation - cart position, chicken and meat position, feather explosion handles meat gathered, chicken missed and meat missed
   startAnimation() {
     const animate = () => {
       requestAnimationFrame(animate);
@@ -356,12 +364,14 @@ export class GameComponent implements OnInit {
     meat.position.copy(pos);
     this.meat.push({ meat: meat, missed: false, caught: false, id: id })
   }
+  //Creates a random box with specifications
   createBox(width: number, height: number, depth: number, color: THREE.Color) {
     const box = new THREE.BoxGeometry(width, height, depth);
     const boxMaterial = new THREE.MeshBasicMaterial({ color: color });
     const boxMesh = new THREE.Mesh(box, boxMaterial);
     return boxMesh;
   }
+  //Creates cart to gather meat
   createCart() {
     const texture = this.textureLoader.load('assets/GathererIcon.png');
     const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, alphaTest: 0.1, side: THREE.DoubleSide, });
@@ -371,6 +381,7 @@ export class GameComponent implements OnInit {
     this.scene.add(this.cart)
     this.cart.position.set(0, -11, 0)
   }
+  //Exits game
   exitGame() {
     this.signalRService.playerExited(this.roomCode);
     this.router.navigate(['/MainMenu'])

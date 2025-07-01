@@ -244,7 +244,7 @@ export class GameComponent implements OnInit {
             chicken.chickenPath = "Up"
           }
         }
-        if (Date.now() - chicken.SpawnedOn > 10000) {
+        if (Date.now() - chicken.SpawnedOn > 10000 && this.role == "Hunter") {
           this.signalRService.chickenMissed(this.roomCode, chicken.id)
         }
 
@@ -264,14 +264,14 @@ export class GameComponent implements OnInit {
         if (meat.caught || meat.missed) return;
         const meatPos = meat.meat.position
         const cartPos = this.cart.position
-        if (meatPos.distanceTo(cartPos) < 2) {
+        if (meatPos.distanceTo(cartPos) < 2 && this.role == "Gatherer") {
           this.signalRService.meatGathered(this.roomCode, meat.id)
           return;
         }
         if (meat.meat.position.y >= -15) {
           meat.meat.position.y -= 0.1;
           meat.meat.rotation.z += 0.05;
-        } else {
+        } else if(this.role == "Gatherer") {
           this.signalRService.meatMissed(this.roomCode, meat.id)
         }
       });

@@ -17,7 +17,7 @@ export class SignalRService {
       .build();
     return this.hubConnection
       .start()
-      .then(() => console.log('✅ SignalR Connected'))
+      .then()
       .catch(err => {
         console.error('❌ SignalR connection failed:', err);
         throw err;

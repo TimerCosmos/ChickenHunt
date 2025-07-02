@@ -19,6 +19,7 @@ export class MenuOptionsComponent implements OnInit {
   roomCode: string = "";
   inputValue: string = "";
   waiting: boolean = false;
+  status = "";
   constructor(private router: Router, private signalRService: SignalRService) { }
   async ngOnInit() {
     await this.signalRService.startConnection();
@@ -60,22 +61,31 @@ export class MenuOptionsComponent implements OnInit {
   async goToGame() {
     if (this.hasRoom) {
       const joined = await this.onJoinRoom(this.inputValue);
-      this.roomCode = this.inputValue
       if (joined) {
+        this.roomCode = this.inputValue
+        sessionStorage.setItem('Role',this.role)
         this.signalRService.startGame(this.roomCode)
       } else {
-        alert('Room not found!');
+        this.status = "Room Not Found"
       }
     } else {
       const created = await this.onCreateRoom();
       if (created) {
         this.waiting = true;
       } else {
-        alert("❌ Couldn't create room.");
+        this.status = "Could not create Room"
       }
     }
   }
-
+  createNewRoom(){
+    this.hasRoom = false;
+    this.status = "";
+    this.inputValue = "";
+  }
+  joinExistingRoom(){
+    this.hasRoom = true;
+    this.status = "";
+  }
   async onCreateRoom(): Promise<boolean> {
     try {
       const response = await this.signalRService.createRoom(this.role, this.roomCode);
@@ -91,10 +101,10 @@ export class MenuOptionsComponent implements OnInit {
   async onJoinRoom(inputCode: string): Promise<boolean> {
     try {
       const response = await this.signalRService.joinRoom(inputCode);
-      const resp = response?.status && response?.response?.success
+      const resp = response.status && response.response.success
       if(resp){
         this.role = response.response.data.role;
-        sessionStorage.setItem('Role',this.role)
+        sessionStorage.setItem('Role',response.response.data.role)
       }
       return resp;
     } catch (err) {

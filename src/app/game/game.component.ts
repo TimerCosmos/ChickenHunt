@@ -42,6 +42,10 @@ export class GameComponent implements OnInit {
   soundOn: boolean = true;
   status: string = "";
   constructor(private router: Router, private signalRService: SignalRService) {
+    const role = sessionStorage.getItem('Role')
+    if (role != null) {
+      this.role = role;
+    }
     const roomCode = sessionStorage.getItem('RoomCode')
     if (roomCode != null) {
       this.roomCode = roomCode
@@ -129,15 +133,10 @@ export class GameComponent implements OnInit {
     })
   }
   async ngOnInit() {
-    const role = sessionStorage.getItem('Role')
-    if (role != null) {
-      this.role = role;
-    }
-    this.signalRService.reconnectToRoom(this.roomCode, this.role).then((response) => {
-      console.log(response)
+    this.signalRService.reconnectToRoom(this.roomCode, sessionStorage.getItem('Role') ?? "G").then((response) => {
       if (!response.response.success) {
         this.gameOver = true;
-      } else if(!response.status) {
+      } else if (!response.status) {
         this.status = "Some Error Occured"
       }
     });

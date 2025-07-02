@@ -14,6 +14,9 @@
             <span class="font-20">Chicken Hunt</span>
             <button class="close-button" (click)="startingGame = false"></button>
         </div>
+        <div class="error pixel-font font-10">
+            {{status}}
+        </div>
         @if(!hasRoom){
         <div class="role-chooser">
             <span>Choose your role!</span>
@@ -26,13 +29,13 @@
         <div class="room-chooser">
             @if(!hasRoom){
             <span>Your room code : {{roomCode}} </span><br>
-            <span>Already have a room? <button class="info-button" (click)="hasRoom = true">Yes</button><br></span>
+            <span>Already have a room? <button class="info-button" (click)="joinExistingRoom()">Yes</button><br></span>
             }@else {
                 <span>
                     <label for="RoomCode">Enter your friends room code : </label>
                     <input [(ngModel)]="inputValue" class="code-input" title="Code" name="RoomCode"/>
                 </span><br>
-                <span>Create new Room? <button class="info-button" (click)="hasRoom = false">Yes</button></span>
+                <span>Create new Room? <button class="info-button" (click)="createNewRoom()">Yes</button></span>
             }
         </div><br>
         <div class="d-flex justify-content-center align-items-center">

@@ -37,15 +37,18 @@ export class GameComponent implements OnInit {
   pressedKeys: Set<string> = new Set<string>()
   role!: string;
   otherPlayerDisconnected: boolean = false;
-  playerExited : boolean = false;
+  playerExited: boolean = false;
+  playinSounds: THREE.Audio[] = []
+  soundOn: boolean = true;
+  status: string = "";
   constructor(private router: Router, private signalRService: SignalRService) {
-    const role = sessionStorage.getItem('Role')
-    if (role != null) {
-      this.role = role;
-    }
     const roomCode = sessionStorage.getItem('RoomCode')
     if (roomCode != null) {
       this.roomCode = roomCode
+    }
+    const soundOff = sessionStorage.getItem('Sound')
+    if (soundOff) {
+      this.soundOn = JSON.parse(soundOff)
     }
   }
   boundMouseClick!: (event: MouseEvent) => void;
@@ -54,11 +57,22 @@ export class GameComponent implements OnInit {
   //Initialized various receive methods from backend
   backEndRequests() {
 
-    this.signalRService.hubConnection.on("SpawnChicken", (chicken:any) => {
+    this.signalRService.hubConnection.on("SpawnChicken", (chicken: any) => {
+      if (this.soundOn) {
+        this.returnSound('assets/ChickenSpawn.mp3', 0.5).then((sound) => {
+          sound.play();
+        });
+      }
       this.createChicken(chicken.xPos, chicken.yPos, chicken.zPos, chicken.id)
     })
 
     this.signalRService.onUpdateKills((kills, id, score, levelIncrease) => {
+      if (this.soundOn) {
+        this.returnSound('assets/GunShot.mp3', 0.3).then((sound) => {
+          sound.play();
+        });
+
+      }
       this.chickensHunted = kills;
       this.Score = score;
       const chicken = this.chickens.filter(c => c.id == id)[0].chicken
@@ -110,13 +124,24 @@ export class GameComponent implements OnInit {
       this.otherPlayerDisconnected = true;
     });
 
-    this.signalRService.onPlayerExit((role : string) => {
+    this.signalRService.onPlayerExit((role: string) => {
       this.playerExited = true;
     })
   }
   async ngOnInit() {
-    await this.signalRService.reconnectToRoom(this.roomCode, this.role)
-    if(this.role == "Hunter"){
+    const role = sessionStorage.getItem('Role')
+    if (role != null) {
+      this.role = role;
+    }
+    this.signalRService.reconnectToRoom(this.roomCode, this.role).then((response) => {
+      console.log(response)
+      if (!response.response.success) {
+        this.gameOver = true;
+      } else if(!response.status) {
+        this.status = "Some Error Occured"
+      }
+    });
+    if (this.role == "Hunter") {
       await this.signalRService.startGame(this.roomCode)
     }
     this.startAnimation();
@@ -125,6 +150,9 @@ export class GameComponent implements OnInit {
     this.addKeyBoardEventListeners();
     this.createCart();
     this.backEndRequests();
+    if (this.soundOn) {
+      this.turnOnBackgroundMusic()
+    }
   }
   //Activates controls based on the role
   roleBasedEventListenersActivation() {
@@ -197,6 +225,13 @@ export class GameComponent implements OnInit {
         const clickedChicken = this.chickens[clickedChickenIndex];
         clickedChicken.hunted = true;
         this.signalRService.chickenKilled(this.roomCode, clickedChicken.id);
+      }
+    } else {
+      if (this.soundOn) {
+        this.returnSound('assets/GunShot.mp3', 0.3).then((sound) => {
+          sound.play();
+        });
+
       }
     }
   }
@@ -271,7 +306,7 @@ export class GameComponent implements OnInit {
         if (meat.meat.position.y >= -15) {
           meat.meat.position.y -= 0.1;
           meat.meat.rotation.z += 0.05;
-        } else if(this.role == "Gatherer") {
+        } else if (this.role == "Gatherer") {
           this.signalRService.meatMissed(this.roomCode, meat.id)
         }
       });
@@ -384,7 +419,53 @@ export class GameComponent implements OnInit {
   //Exits game
   exitGame() {
     this.signalRService.playerExited(this.roomCode);
+    this.stopBackGroundMusic();
+    this.removeEventListenerS();
     this.router.navigate(['/MainMenu'])
   }
+  stopBackGroundMusic() {
+    this.soundOn = false
+    this.playinSounds.forEach((sound) => {
+      if (sound.isPlaying) sound.stop()
+    })
+  }
+  removeEventListenerS() {
+    window.removeEventListener('click', this.boundMouseClick, false);
+    window.removeEventListener('keydown', this.boundKeydown, false);
+    window.removeEventListener('keyup', this.boundKeyUp, false)
+  }
+  returnSound(path: string, volume: number, loop = false): Promise<THREE.Audio> {
+    return new Promise((resolve, reject) => {
+      const listener = new THREE.AudioListener();
+      this.camera.add(listener);
+      const sound = new THREE.Audio(listener);
+      const audioLoader = new THREE.AudioLoader();
 
+      audioLoader.load(
+        path,
+        (buffer) => {
+          sound.setBuffer(buffer);
+          sound.setVolume(volume);
+          sound.setLoop(loop)
+          resolve(sound);
+        },
+        undefined,
+        (err) => reject(err)
+      );
+    });
+  }
+  alterSound() {
+    this.soundOn = !this.soundOn
+    if (!this.soundOn) {
+      this.stopBackGroundMusic();
+    } else {
+      this.turnOnBackgroundMusic()
+    }
+  }
+  turnOnBackgroundMusic() {
+    this.returnSound('assets/BackGroundMusic.mp3', 0.5, true).then((sound) => {
+      sound.play();
+      this.playinSounds.push(sound);
+    });
+  }
 }

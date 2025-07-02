@@ -1,4 +1,4 @@
-import { AfterViewInit, Component } from '@angular/core';
+import { AfterViewInit, Component, OnInit } from '@angular/core';
 
 @Component({
   selector: 'app-root',
@@ -8,6 +8,7 @@ import { AfterViewInit, Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'ChickenHunt';
+
 
 
 }

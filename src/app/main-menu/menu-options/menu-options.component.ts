@@ -63,8 +63,6 @@ export class MenuOptionsComponent implements OnInit {
       this.roomCode = this.inputValue
       if (joined) {
         this.signalRService.startGame(this.roomCode)
-        sessionStorage.setItem('RoomCode',this.roomCode)
-        this.router.navigate(['/Game']);
       } else {
         alert('Room not found!');
       }
@@ -95,7 +93,8 @@ export class MenuOptionsComponent implements OnInit {
       const response = await this.signalRService.joinRoom(inputCode);
       const resp = response?.status && response?.response?.success
       if(resp){
-        sessionStorage.setItem('Role',response.response.data.role)
+        this.role = response.response.data.role;
+        sessionStorage.setItem('Role',this.role)
       }
       return resp;
     } catch (err) {

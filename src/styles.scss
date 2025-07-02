@@ -36,7 +36,8 @@ body {
 }
 
 .MenuButton {
-  width: 15vw;
+  min-width: 15vw;
+  box-sizing: border-box;
   color: black !important;
   font-weight: 100 !important;
   margin: 1vh;

@@ -10,9 +10,19 @@
         }
         @if(otherPlayerDisconnected){
         <div class="top-middle pixel-font">
-            Other player lost connection 
+            Other player lost connection
         </div>
         }
+        @if(gameOver){
+        <div class="top-middle pixel-font font-12">
+            The game in this room is no longer available you can exit Now
+        </div>
+        }@else {
+        <div class="top-middle pixel-font font-12">
+            {{status}}
+        </div>
+        }
+
         <div class="right-top font-12 game-info p-2 flex-wrap">
             <span class="game-text pixel-font"> Room Code : {{roomCode}} </span>
             <span class="game-text pixel-font">Role : {{role}} </span>
@@ -32,6 +42,11 @@
                 multiplayer, Go help your friend</span><br>
             <div class="buttons d-flex pixel-font justify-content-around">
                 <button class="pause-button" (click)="pause = false">Resume</button>
+                <button class="pause-button" (click)="alterSound()"> @if(soundOn){
+                    Mute
+                    }@else{
+                    Turn On Sound
+                    }</button>
                 <button class="pause-button" (click)="exitGame()">Exit</button>
             </div>
         </div>

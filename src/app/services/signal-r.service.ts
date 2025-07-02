@@ -12,7 +12,7 @@ export class SignalRService {
 
   async startConnection(): Promise<void> {
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl('http://localhost:5042/gamehub')
+      .withUrl('https://chickenhuntbackend.onrender.com/gamehub')
       .withAutomaticReconnect()
       .build();
     return this.hubConnection
@@ -23,15 +23,14 @@ export class SignalRService {
         throw err;
       });
   }
-  async reconnectToRoom(roomCode: string, role: string): Promise<void> {
+  async reconnectToRoom(roomCode: string, role: string){
     if (!this.hubConnection || this.hubConnection.state !== signalR.HubConnectionState.Connected) {
       await this.startConnection();
-    } 
-    try {
-      await this.hubConnection.invoke('ReconnectRoom', roomCode, role);
-    } catch (err) {
     }
+    return await this.hubConnection.invoke('ReconnectRoom', roomCode, role);
+
   }
+
 
   onStartGame(callback: (roomCode: string, players: any) => void) {
     this.hubConnection.on('StartGame', callback);
@@ -41,7 +40,7 @@ export class SignalRService {
     return this.hubConnection.invoke('StartGame', roomCode);
   }
 
-  playerExited(roomCode : string){
+  playerExited(roomCode: string) {
     return this.hubConnection.invoke('PlayerExitedRoom', roomCode)
   }
 
@@ -49,7 +48,7 @@ export class SignalRService {
     this.hubConnection.on('SpawnChicken', callback);
   }
 
-  testConnection(){
+  testConnection() {
     return this.hubConnection.invoke('TestChicken')
   }
   createRoom(role: string, roomCode: string) {
@@ -83,7 +82,7 @@ export class SignalRService {
     this.hubConnection.on('UpdateMissedChickens', callback);
   }
 
-  onUpdateCartPosition(callback: (direction : string, keyAction : boolean) => void) {
+  onUpdateCartPosition(callback: (direction: string, keyAction: boolean) => void) {
     this.hubConnection.on('UpdateCartPos', callback)
   }
 
@@ -94,7 +93,7 @@ export class SignalRService {
     this.hubConnection.on("PlayerDisconnected", callback);
   }
 
-  onPlayerExit(callback : (role : string) => void){
+  onPlayerExit(callback: (role: string) => void) {
     this.hubConnection.on("PlayerExited", callback)
   }
 

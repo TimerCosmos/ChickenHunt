@@ -30,6 +30,7 @@ export class MainMenuComponent implements OnInit, OnDestroy {
   }
   soundChange() {
     this.Sound = !this.Sound;
+    sessionStorage.setItem('Sound', JSON.stringify(this.Sound))
   }
   receiveChosenOption(event: any) {
     this.CurrentScreen = event;

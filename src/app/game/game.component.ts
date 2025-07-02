@@ -40,6 +40,7 @@ export class GameComponent implements OnInit {
   soundOn: boolean = true;
   status: string = "";
   InfoAboutOtherPlayer: string = "Other Player is Online!"
+  showOtherPlayerInfo: boolean = false;
   constructor(private router: Router, private signalRService: SignalRService) {
     const roomCode = sessionStorage.getItem('RoomCode')
     if (roomCode != null) {
@@ -122,26 +123,36 @@ export class GameComponent implements OnInit {
     this.signalRService.onPlayerDisconnected((role: string) => {
       if (this.role != role) {
         this.InfoAboutOtherPlayer = `${role} player got Disconnected!`
+        this.timeOutForDisplayMsg()
       }
     });
 
     this.signalRService.onPlayerReconnected((role: string) => {
       if (this.role != role) {
         this.InfoAboutOtherPlayer = `${role} player Reconnected Back`
+        this.timeOutForDisplayMsg()
       }
     })
 
     this.signalRService.onPlayerExit((role: string) => {
       if (this.role != role) {
         this.InfoAboutOtherPlayer = `${role} exited cruelly!`
+        this.timeOutForDisplayMsg()
       }
     })
 
     this.signalRService.onPlayerRejoin((role: string) => {
       if (this.role != role) {
         this.InfoAboutOtherPlayer = `${role} kindly joined Back`
+        this.timeOutForDisplayMsg()
       }
     })
+  }
+  timeOutForDisplayMsg() {
+    this.showOtherPlayerInfo = true;
+    setTimeout(() => {
+      this.showOtherPlayerInfo = false;
+    }, 3000);
   }
   async ngOnInit() {
     const role = sessionStorage.getItem('Role')

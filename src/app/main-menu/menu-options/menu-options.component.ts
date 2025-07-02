@@ -105,7 +105,7 @@ export class MenuOptionsComponent implements OnInit {
       if(resp){
         this.role = response.response.data.role;
         sessionStorage.setItem('Role',response.response.data.role)
-        sessionStorage.setItem('RoomState', response.response.data.roomState)
+        sessionStorage.setItem('RoomState',JSON.stringify( response.response.data.roomState))
       }
       return resp;
     } catch (err) {

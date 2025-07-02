@@ -137,8 +137,8 @@ export class GameComponent implements OnInit {
       }
     })
 
-    this.signalRService.onPlayerRejoin((role: string ) => {
-      if(this.role != role){
+    this.signalRService.onPlayerRejoin((role: string) => {
+      if (this.role != role) {
         this.InfoAboutOtherPlayer = `${role} kindly joined Back`
       }
     })
@@ -152,13 +152,28 @@ export class GameComponent implements OnInit {
           this.gameOver = true;
         } else if (!response.status) {
           this.status = "Some Error Occured"
+        } else if (response.response.success) {
+          const roomInfo = response.response.data
+          this.chickensHunted = roomInfo.chickensKilled
+          this.chickensMissed = roomInfo.ChickensMissed
+          this.Score = roomInfo.score
+          this.meatGathered = roomInfo.meatGathered
+          this.meatMissed = roomInfo.meatMissed
         }
       });
       if (this.role == "Hunter") {
         await this.signalRService.startGame(this.roomCode)
       }
     }
-
+    const roomState = sessionStorage.getItem('RoomState')
+    if (roomState != null) {
+      const roomInfo = JSON.parse(roomState)
+      this.chickensHunted = roomInfo.chickensKilled
+      this.chickensMissed = roomInfo.ChickensMissed
+      this.Score = roomInfo.score
+      this.meatGathered = roomInfo.meatGathered
+      this.meatMissed = roomInfo.meatMissed
+    }
     this.startAnimation();
     this.sceneSettings();
     this.roleBasedEventListenersActivation();

@@ -36,16 +36,11 @@ export class GameComponent implements OnInit {
   roomCode!: string;
   pressedKeys: Set<string> = new Set<string>()
   role!: string;
-  otherPlayerDisconnected: boolean = false;
-  playerExited: boolean = false;
   playinSounds: THREE.Audio[] = []
   soundOn: boolean = true;
   status: string = "";
+  InfoAboutOtherPlayer: string = "Other Player is Online!"
   constructor(private router: Router, private signalRService: SignalRService) {
-    const role = sessionStorage.getItem('Role')
-    if (role != null) {
-      this.role = role;
-    }
     const roomCode = sessionStorage.getItem('RoomCode')
     if (roomCode != null) {
       this.roomCode = roomCode
@@ -125,24 +120,45 @@ export class GameComponent implements OnInit {
     })
 
     this.signalRService.onPlayerDisconnected((role: string) => {
-      this.otherPlayerDisconnected = true;
+      if (this.role != role) {
+        this.InfoAboutOtherPlayer = `${role} player got Disconnected!`
+      }
     });
 
+    this.signalRService.onPlayerReconnected((role: string) => {
+      if (this.role != role) {
+        this.InfoAboutOtherPlayer = `${role} player Reconnected Back`
+      }
+    })
+
     this.signalRService.onPlayerExit((role: string) => {
-      this.playerExited = true;
+      if (this.role != role) {
+        this.InfoAboutOtherPlayer = `${role} exited cruelly!`
+      }
+    })
+
+    this.signalRService.onPlayerRejoin((role: string ) => {
+      if(this.role != role){
+        this.InfoAboutOtherPlayer = `${role} kindly joined Back`
+      }
     })
   }
   async ngOnInit() {
-    this.signalRService.reconnectToRoom(this.roomCode, sessionStorage.getItem('Role') ?? "G").then((response) => {
-      if (!response.response.success) {
-        this.gameOver = true;
-      } else if (!response.status) {
-        this.status = "Some Error Occured"
+    const role = sessionStorage.getItem('Role')
+    if (role != null) {
+      this.role = role
+      this.signalRService.reconnectToRoom(this.roomCode, role).then((response) => {
+        if (!response.response.success) {
+          this.gameOver = true;
+        } else if (!response.status) {
+          this.status = "Some Error Occured"
+        }
+      });
+      if (this.role == "Hunter") {
+        await this.signalRService.startGame(this.roomCode)
       }
-    });
-    if (this.role == "Hunter") {
-      await this.signalRService.startGame(this.roomCode)
     }
+
     this.startAnimation();
     this.sceneSettings();
     this.roleBasedEventListenersActivation();

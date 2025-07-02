@@ -92,9 +92,14 @@ export class SignalRService {
   onPlayerDisconnected(callback: (role: string) => void) {
     this.hubConnection.on("PlayerDisconnected", callback);
   }
-
+  onPlayerReconnected(callback: (role : string) => void){
+    this.hubConnection.on("Reconnected", callback)
+  }
   onPlayerExit(callback: (role: string) => void) {
     this.hubConnection.on("PlayerExited", callback)
+  }
+  onPlayerRejoin(callback : (role : string) => void){
+    this.hubConnection.on("PlayerReJoined", callback)
   }
 
   // Send events
